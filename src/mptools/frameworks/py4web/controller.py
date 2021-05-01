@@ -144,7 +144,7 @@ class CORS(Fixture):
 class AsXlsx(Fixture):
     """ Export the output to excel format """
 
-    def __init__(self, filename='export', columns=None, index=False):
+    def __init__(self, filename='export', columns=None, index=False, index_label=None):
         """
         filename @string : Name of the downloading file
         columns @list : Sorted list of the column names to export
@@ -152,6 +152,7 @@ class AsXlsx(Fixture):
         self.filename = filename
         self.columns = columns
         self.index = index
+        self.index_label = index_label
 
     def on_success(self, status):
         # called when a request is successful
@@ -172,7 +173,9 @@ class AsXlsx(Fixture):
         with pd.ExcelWriter(stream, engine='xlsxwriter') as writer:
             for sensor, data in output.items():
                 df = pd.DataFrame(data)
-                df.to_excel(writer, sheet_name=sensor, columns=self.columns, index=self.index)
+                df.to_excel(writer, sheet_name=sensor, columns=self.columns,
+                    index=self.index, index_label=self.index_label
+                )
 
         stream.seek(0)
         return stream.read()

@@ -103,3 +103,6 @@ class Wiz(object):
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.__run('teardown')
+
+    def destroy(self):
+        self.__run('teardown')
