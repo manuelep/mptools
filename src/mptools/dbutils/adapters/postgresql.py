@@ -76,7 +76,7 @@ def pgteardown(hostname, port, puser, ppass, uris, **__):
         user = puser,
         password = ppass,
         host = hostname,
-        port= port
+        port = port
     ) as conn:
         conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
         with conn.cursor() as curs:

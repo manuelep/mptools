@@ -2,11 +2,15 @@
 
 from py4web.core import Fixture, HTTP
 from py4web import request, response
+from yatl import XML
 from inspect import signature, _empty
 import json
 import pandas as pd
 from io import BytesIO
+import psycopg2
 
+from ujson import dumps
+from pytopojson import topology
 
 def unjson(value):
     try:
@@ -53,8 +57,18 @@ def webio(func, **defaults):
 
     return kwargs
 
+def web_call(func, **defaults):
+    """
+    Variables declared in function signature will be taken from request and
+    decoded as they were json string before being passed to the function.
+
+    defaults : Default values that will overwrite the ones defined in signature.
+    """
+    return func(**webio(func, **defaults))
+
+
 class WebWrapper(Fixture):
-    """docstring for WebWrapper."""
+    """ DEPRECATED use web_call instead """
 
     def __init__(self, **defaults):
         super(WebWrapper, self).__init__()
@@ -179,3 +193,31 @@ class AsXlsx(Fixture):
 
         stream.seek(0)
         return stream.read()
+
+def retry_controller(db, times=10):
+    def st_wrapper(func):
+        def nd_wrapper(*args, **kwargs):
+            for i in range(times):
+                try:
+                    result = func(*args, **kwargs)
+                except psycopg2.InterfaceError:
+                    db.rollback()
+                    db._adapter.reconnect()
+                    continue
+            raise
+        return nd_wrapper
+    return st_wrapper
+
+class ToTopojson(Fixture):
+    """docstring for to_topojson."""
+
+    @staticmethod
+    def on_error():
+        pass
+
+    def on_success(self, status=200):
+        response.headers["Content-Type"] = "application/geo+json"
+
+    def transform(self, output, shared_data=None):
+        topo = topology.Topology()
+        return XML(dumps(topo(output)))
