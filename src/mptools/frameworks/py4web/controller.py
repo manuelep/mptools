@@ -137,16 +137,19 @@ class LocalsOnly(Fixture):
         if not request.urlparts.netloc.startswith('localhost'):
             raise HTTP(403)
 
+import jwt
+from pydal._compat import to_native
 
 class CORS(Fixture):
     """ Fixture helper for sharing web service avoiding cross origin resource sharing problems """
 
-    def __init__(self, age=86400, origin="*", headers="*", methods="*"):
+    def __init__(self, age=86400, origin="*", headers="*", methods="*", session=None):
         super(CORS, self).__init__()
         self.age = age
         self.origin = origin
         self.headers = headers
         self.methods = methods
+        self.session = session
 
     def on_request(self):
         response.headers["Access-Control-Allow-Origin"] = self.origin
@@ -154,6 +157,20 @@ class CORS(Fixture):
         response.headers["Access-Control-Allow-Headers"] = self.headers
         response.headers["Access-Control-Allow-Methods"] = self.methods
         response.headers["Access-Control-Allow-Credentials"] = "true"
+
+    def on_success(self, status=200):
+        if not self.session is None:
+            # Courtesy of: https://github.com/web2py/py4web/blob/master/py4web/core.py#L546
+            cookie_data = jwt.encode(self.session.local.data, self.session.secret, algorithm=self.session.algorithm)
+            response.set_cookie(
+                self.session.local.session_cookie_name,
+                to_native(cookie_data),
+                path = "/",
+                secure = True,
+                same_site = "None",
+                httponly = True
+            )
+        # response.set_cookie('auth_test_session', 'bar', samesite='Lax', secure=True);
 
 class AsXlsx(Fixture):
     """ Export the output to excel format """
