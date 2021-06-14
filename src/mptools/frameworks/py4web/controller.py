@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from py4web.core import Fixture, HTTP
-from py4web import request, response
+from py4web import request, response, abort
 from yatl import XML
 from inspect import signature, _empty
 import json
@@ -11,6 +11,8 @@ import psycopg2
 
 from ujson import dumps
 from pytopojson import topology
+
+from pydal.objects import Table
 
 def unjson(value):
     try:
@@ -23,6 +25,42 @@ def check_key_in_params(key):
         return (key in request.params)
     except KeyError:
         return False
+
+class ApiForm(object):
+    """docstring for ApiForm."""
+
+    def __init__(self, *fields, apiname='none', **args):
+        super(ApiForm, self).__init__()
+        self.table = Table(None, apiname, *fields, **args)
+        # self.fields = {field.name: field for field in fields}
+        # self.vars = {}
+        # self.errors = {}
+
+    def validate(self, **overwrite):
+        kwargs = {}
+        for field in self.table:
+            key = field.name
+
+            if key in request.query:
+                kwargs[key] = unjson(request.query[key])
+            elif request.json and (key in request.json):
+                kwargs[key] = request.json[key]
+            elif check_key_in_params(key):
+                kwargs[key] = unjson(request.params[key])
+            elif key in overwrite:
+                kwargs[key] = overwrite[key]
+
+        response, new_fields = self.table._validate_fields(kwargs)
+
+        return response, new_fields,
+
+    def callback(self, func, **overwrite):
+        response, new_fields = self.validate(**overwrite)
+        if response.errors:
+            return response.as_dict()
+        else:
+            return func(**dict(overwrite, **new_fields))
+
 
 def webio(func, **defaults):
     kwargs = {}
@@ -163,7 +201,7 @@ class CORS(Fixture):
             # Courtesy of: https://github.com/web2py/py4web/blob/master/py4web/core.py#L546
             cookie_data = jwt.encode(self.session.local.data, self.session.secret, algorithm=self.session.algorithm)
             response.set_cookie(
-                self.session.local.session_cookie_name,
+                self.session.local.session_cookie_name if hasattr(self.session.local, 'session_cookie_name') else "%s_session" % request.app_name,
                 to_native(cookie_data),
                 path = "/",
                 secure = True,
