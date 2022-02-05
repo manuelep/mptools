@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="mptools",
-    version="1.0.8",
+    version="1.0.9",
     author="Manuele Pesenti",
     author_email="manuele@inventati.org",
     description="A very custom collection of development shared libraries",

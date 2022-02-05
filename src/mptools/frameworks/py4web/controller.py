@@ -178,13 +178,25 @@ class LocalsOnly(Fixture):
 import jwt
 from pydal._compat import to_native
 
+ALLOW_ALL = "*"
+DENY_ALL = ""
+
 class CORS(Fixture):
     """ Fixture helper for sharing web service avoiding cross origin resource sharing problems """
 
-    def __init__(self, age=86400, origin="*", headers="*", methods="*", session=None):
+    def __init__(self, age=86400, origin=ALLOW_ALL, headers="*", methods="*", session=None):
         super(CORS, self).__init__()
         self.age = age
-        self.origin = origin
+
+        origins = origin.split(',')
+        HTTP_ORIGIN = request.environ.get('HTTP_ORIGIN')
+        if HTTP_ORIGIN in origins:
+            self.origin = HTTP_ORIGIN
+        elif origin==ALLOW_ALL:
+            self.origin = ALLOW_ALL
+        else:
+            self.origin = DENY_ALL
+
         self.headers = headers
         self.methods = methods
         self.session = session
