@@ -5,13 +5,13 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="mptools",
-    version="1.0.9",
+    version="1.0.10",
     author="Manuele Pesenti",
     author_email="manuele@inventati.org",
     description="A very custom collection of development shared libraries",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="A very custom collection of development shared libraries",
+    url="https://github.com/manuelep/mptools",
     project_urls={
         "Bug Tracker": "https://github.com/manuelep/mptools/issues",
     },
